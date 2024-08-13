@@ -12,72 +12,72 @@ from sklearn.metrics import auc, roc_curve, precision_recall_curve, f1_score, ac
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from scipy.stats import pearsonr, spearmanr
 
-with open('paths.json', 'r') as f:
-    path = json.load(f)
-    drg_34_dissection_path = path["drg_34_dissection_path"]
+# with open('paths.json', 'r') as f:
+#     path = json.load(f)
+#     drg_34_dissection_path = path["drg_34_dissection_path"]
 
-# read a csv file but only read in the column of principal_diagnosis_lable and CC/MCC
-pc_cc_mapping = pd.read_csv(drg_34_dissection_path)[["principal_diagnosis_lable", "CC/MCC"]]
-num_labels_pc = pc_cc_mapping.principal_diagnosis_lable.nunique()
+# # read a csv file but only read in the column of principal_diagnosis_lable and CC/MCC
+# pc_cc_mapping = pd.read_csv(drg_34_dissection_path)[["principal_diagnosis_lable", "CC/MCC"]]
+# num_labels_pc = pc_cc_mapping.principal_diagnosis_lable.nunique()
 
-# make a dictinoary where key is principal_diagnosis_lable and value is CC/MCC. For one key there can be multiple values
-pc_cc_dict = {}
-for index, row in pc_cc_mapping.iterrows():
-    if row["principal_diagnosis_lable"] not in pc_cc_dict:
-        pc_cc_dict[row["principal_diagnosis_lable"]] = [row["CC/MCC"]]
-    else:
-        pc_cc_dict[row["principal_diagnosis_lable"]].append(row["CC/MCC"])
-
-
-
-def map_rule(pred_pc, label_pc, pred_cc, label_cc):
-    if pred_pc == label_pc:
-        if pred_cc == label_cc:
-            return True
-        # if there's only one cc/MCC code of this principal diagnosis code, then any predcitons would be right
-        elif len(pc_cc_dict[label_pc]) == 1:
-            return True
-        elif pred_cc in pc_cc_dict[label_pc] and pred_cc != label_cc:
-            return False
-        # for this group, default is to group 0
-        elif set(pc_cc_dict[label_pc]) == {2, 1, 0}:
-            mark_cc = 0
-            if mark_cc == label_cc:
-                return True 
-            else:
-                return False
-        # for this group, default is to group 3: without MCC
-        elif set(pc_cc_dict[label_pc]) == {2, 3}:
-            mark_cc = 3
-            if mark_cc == label_cc:
-                return True
-            else:
-                return False
-        # for this group, there are two scenario. With MCC wil default to group 1, others will default to group 0
-        elif set(pc_cc_dict[label_pc]) == {1, 0}:
-            if pred_cc == 2:
-                mark_cc = 1
-            else:
-                mark_cc = 0
-            if mark_cc == label_cc:
-                return True
-            else:
-                return False
-    return False
-
-map_rule(12,12,1,2)
+# # make a dictinoary where key is principal_diagnosis_lable and value is CC/MCC. For one key there can be multiple values
+# pc_cc_dict = {}
+# for index, row in pc_cc_mapping.iterrows():
+#     if row["principal_diagnosis_lable"] not in pc_cc_dict:
+#         pc_cc_dict[row["principal_diagnosis_lable"]] = [row["CC/MCC"]]
+#     else:
+#         pc_cc_dict[row["principal_diagnosis_lable"]].append(row["CC/MCC"])
 
 
-def accuracies_map(y_pred_pc, labels_pc, y_pred_cc, labels_cc):
-    acc = 0.0
-    num = len(y_pred_pc)
+
+# def map_rule(pred_pc, label_pc, pred_cc, label_cc):
+#     if pred_pc == label_pc:
+#         if pred_cc == label_cc:
+#             return True
+#         # if there's only one cc/MCC code of this principal diagnosis code, then any predcitons would be right
+#         elif len(pc_cc_dict[label_pc]) == 1:
+#             return True
+#         elif pred_cc in pc_cc_dict[label_pc] and pred_cc != label_cc:
+#             return False
+#         # for this group, default is to group 0
+#         elif set(pc_cc_dict[label_pc]) == {2, 1, 0}:
+#             mark_cc = 0
+#             if mark_cc == label_cc:
+#                 return True 
+#             else:
+#                 return False
+#         # for this group, default is to group 3: without MCC
+#         elif set(pc_cc_dict[label_pc]) == {2, 3}:
+#             mark_cc = 3
+#             if mark_cc == label_cc:
+#                 return True
+#             else:
+#                 return False
+#         # for this group, there are two scenario. With MCC wil default to group 1, others will default to group 0
+#         elif set(pc_cc_dict[label_pc]) == {1, 0}:
+#             if pred_cc == 2:
+#                 mark_cc = 1
+#             else:
+#                 mark_cc = 0
+#             if mark_cc == label_cc:
+#                 return True
+#             else:
+#                 return False
+#     return False
+
+# map_rule(12,12,1,2)
+
+
+# def accuracies_map(y_pred_pc, labels_pc, y_pred_cc, labels_cc):
+#     acc = 0.0
+#     num = len(y_pred_pc)
     
-    for i in range(num):
-        if map_rule(y_pred_pc[i], labels_pc[i], y_pred_cc[i], labels_cc[i]):
-            acc += 1.
-    acc /= num
+#     for i in range(num):
+#         if map_rule(y_pred_pc[i], labels_pc[i], y_pred_cc[i], labels_cc[i]):
+#             acc += 1.
+#     acc /= num
 
-    return acc
+#     return acc
 
 
 # full evaluation 
@@ -134,45 +134,45 @@ def cls_metrics_eval(y_pred, y, class_num):
 
     return metric_dict
 
-def cls_metrics_multi(y_pred, y):
-    # class_num = args.Y
-    predictions_pc = y_pred[:, :num_labels_pc]
-    y_pred_pc = softmax(predictions_pc)
-    labels_onehot_pc = y[:, :num_labels_pc]
-    labels_pc = np.argmax(labels_onehot_pc, axis=1)
-    predictions_cc = y_pred[:, num_labels_pc:]
-    y_pred_cc = softmax(predictions_cc)
-    labels_onehot_cc = y[:, num_labels_pc:]
-    labels_cc = np.argmax(labels_onehot_cc, axis=1)
+# def cls_metrics_multi(y_pred, y):
+#     # class_num = args.Y
+#     predictions_pc = y_pred[:, :num_labels_pc]
+#     y_pred_pc = softmax(predictions_pc)
+#     labels_onehot_pc = y[:, :num_labels_pc]
+#     labels_pc = np.argmax(labels_onehot_pc, axis=1)
+#     predictions_cc = y_pred[:, num_labels_pc:]
+#     y_pred_cc = softmax(predictions_cc)
+#     labels_onehot_cc = y[:, num_labels_pc:]
+#     labels_cc = np.argmax(labels_onehot_cc, axis=1)
 
-    ## Need to double check it mirrows the original methods
+#     ## Need to double check it mirrows the original methods
     
-    macroAUC_pc, microAUC_pc, appeared_pc, cases_pc = ave_auc_scores(y_pred_pc, labels_onehot_pc)
-    macroF1_pc, microF1_pc = ave_f1_scores(predictions_pc, labels_pc)
-    acc10_pc, acc5_pc, acc_pc, _ = accuracies(predictions_pc, labels_pc)
+#     macroAUC_pc, microAUC_pc, appeared_pc, cases_pc = ave_auc_scores(y_pred_pc, labels_onehot_pc)
+#     macroF1_pc, microF1_pc = ave_f1_scores(predictions_pc, labels_pc)
+#     acc10_pc, acc5_pc, acc_pc, _ = accuracies(predictions_pc, labels_pc)
 
-    macroAUC_cc, microAUC_cc, appeared_cc, cases_cc = ave_auc_scores(y_pred_cc, labels_onehot_cc)
-    macroF1_cc, microF1_cc = ave_f1_scores(predictions_cc, labels_cc)
-    acc10_cc, acc5_cc, acc_cc, _ = accuracies(predictions_cc, labels_cc)
+#     macroAUC_cc, microAUC_cc, appeared_cc, cases_cc = ave_auc_scores(y_pred_cc, labels_onehot_cc)
+#     macroF1_cc, microF1_cc = ave_f1_scores(predictions_cc, labels_cc)
+#     acc10_cc, acc5_cc, acc_cc, _ = accuracies(predictions_cc, labels_cc)
 
-    y_pred_pc_single = np.argmax(y_pred_pc, axis=1)
-    y_pred_cc_single = np.argmax(y_pred_cc, axis=1)
+#     y_pred_pc_single = np.argmax(y_pred_pc, axis=1)
+#     y_pred_cc_single = np.argmax(y_pred_cc, axis=1)
 
-    acc_map = accuracies_map(y_pred_pc_single, labels_pc, y_pred_cc_single, labels_cc)
+#     acc_map = accuracies_map(y_pred_pc_single, labels_pc, y_pred_cc_single, labels_cc)
 
-    metric_dict = {
-        'acc_map': acc_map,
-        'microF1_pc':microF1_pc, 'macroF1_pc':macroF1_pc,
-        'microAUC_pc':microAUC_pc, 'macroAUC_pc':macroAUC_pc,
-        'labels_pc': appeared_pc, 'count_pc': cases_pc,
-        'acc10_pc': acc10_pc, 'acc5_pc': acc5_pc, 'acc_pc': acc_pc,
-        'microF1_cc':microF1_cc, 'macroF1_cc':macroF1_cc,
-        'microAUC_cc':microAUC_cc, 'macroAUC_cc':macroAUC_cc,
-        'labels_cc': appeared_cc, 'count_cc': cases_cc,
-        'acc10_cc': acc10_cc, 'acc5_cc': acc5_cc, 'acc_cc': acc_cc
-    }
+#     metric_dict = {
+#         'acc_map': acc_map,
+#         'microF1_pc':microF1_pc, 'macroF1_pc':macroF1_pc,
+#         'microAUC_pc':microAUC_pc, 'macroAUC_pc':macroAUC_pc,
+#         'labels_pc': appeared_pc, 'count_pc': cases_pc,
+#         'acc10_pc': acc10_pc, 'acc5_pc': acc5_pc, 'acc_pc': acc_pc,
+#         'microF1_cc':microF1_cc, 'macroF1_cc':macroF1_cc,
+#         'microAUC_cc':microAUC_cc, 'macroAUC_cc':macroAUC_cc,
+#         'labels_cc': appeared_cc, 'count_cc': cases_cc,
+#         'acc10_cc': acc10_cc, 'acc5_cc': acc5_cc, 'acc_cc': acc_cc
+#     }
 
-    return metric_dict
+#     return metric_dict
 
 def reg_metrics(y_pred, y):    
     mae = mean_absolute_error(y_pred, y)
@@ -193,49 +193,49 @@ def reg_metrics(y_pred, y):
     })
     return metric_dict
     
-def cls_metrics_multi_eval(y_pred, y):
-    # class_num = args.Y
+# def cls_metrics_multi_eval(y_pred, y):
+#     # class_num = args.Y
 
-    predictions_pc = y_pred[:, :num_labels_pc]
-    y_pred_pc = softmax(predictions_pc)
-    labels_onehot_pc = y[:, :num_labels_pc]
-    labels_pc = np.argmax(labels_onehot_pc, axis=1)
-    predictions_cc = y_pred[:, num_labels_pc:]
-    y_pred_cc = softmax(predictions_cc)
-    labels_onehot_cc = y[:, num_labels_pc:]
-    labels_cc = np.argmax(labels_onehot_cc, axis=1)
+#     predictions_pc = y_pred[:, :num_labels_pc]
+#     y_pred_pc = softmax(predictions_pc)
+#     labels_onehot_pc = y[:, :num_labels_pc]
+#     labels_pc = np.argmax(labels_onehot_pc, axis=1)
+#     predictions_cc = y_pred[:, num_labels_pc:]
+#     y_pred_cc = softmax(predictions_cc)
+#     labels_onehot_cc = y[:, num_labels_pc:]
+#     labels_cc = np.argmax(labels_onehot_cc, axis=1)
 
-    ## Need to double check it mirrows the original methods
+#     ## Need to double check it mirrows the original methods
     
-    macroAUC_pc, microAUC_pc, appeared_pc, cases_pc = ave_auc_scores(y_pred_pc, labels_onehot_pc)
-    macroF1_pc, microF1_pc = ave_f1_scores(predictions_pc, labels_pc)
-    acc10_pc, acc5_pc, acc_pc, _ = accuracies(predictions_pc, labels_pc)
+#     macroAUC_pc, microAUC_pc, appeared_pc, cases_pc = ave_auc_scores(y_pred_pc, labels_onehot_pc)
+#     macroF1_pc, microF1_pc = ave_f1_scores(predictions_pc, labels_pc)
+#     acc10_pc, acc5_pc, acc_pc, _ = accuracies(predictions_pc, labels_pc)
 
-    macroAUC_cc, microAUC_cc, appeared_cc, cases_cc = ave_auc_scores(y_pred_cc, labels_onehot_cc)
-    macroF1_cc, microF1_cc = ave_f1_scores(predictions_cc, labels_cc)
-    acc10_cc, acc5_cc, acc_cc, _ = accuracies(predictions_cc, labels_cc)
+#     macroAUC_cc, microAUC_cc, appeared_cc, cases_cc = ave_auc_scores(y_pred_cc, labels_onehot_cc)
+#     macroF1_cc, microF1_cc = ave_f1_scores(predictions_cc, labels_cc)
+#     acc10_cc, acc5_cc, acc_cc, _ = accuracies(predictions_cc, labels_cc)
 
-    y_pred_pc_single = np.argmax(y_pred_pc, axis=1)
-    y_pred_cc_single = np.argmax(y_pred_cc, axis=1)
+#     y_pred_pc_single = np.argmax(y_pred_pc, axis=1)
+#     y_pred_cc_single = np.argmax(y_pred_cc, axis=1)
 
-    acc_map = accuracies_map(y_pred_pc_single, labels_pc, y_pred_cc_single, labels_cc)
+#     acc_map = accuracies_map(y_pred_pc_single, labels_pc, y_pred_cc_single, labels_cc)
 
-    metric_dict = {
-        'acc_map': acc_map,
-        'microF1_pc':microF1_pc, 'macroF1_pc':macroF1_pc,
-        'microAUC_pc':microAUC_pc, 'macroAUC_pc':macroAUC_pc,
-        'labels_pc': appeared_pc, 'count_pc': cases_pc,
-        'acc10_pc': acc10_pc, 'acc5_pc': acc5_pc, 'acc_pc': acc_pc,
-        'microF1_cc':microF1_cc, 'macroF1_cc':macroF1_cc,
-        'microAUC_cc':microAUC_cc, 'macroAUC_cc':macroAUC_cc,
-        'labels_cc': appeared_cc, 'count_cc': cases_cc,
-        'acc10_cc': acc10_cc, 'acc5_cc': acc5_cc, 'acc_cc': acc_cc
-    }
+#     metric_dict = {
+#         'acc_map': acc_map,
+#         'microF1_pc':microF1_pc, 'macroF1_pc':macroF1_pc,
+#         'microAUC_pc':microAUC_pc, 'macroAUC_pc':macroAUC_pc,
+#         'labels_pc': appeared_pc, 'count_pc': cases_pc,
+#         'acc10_pc': acc10_pc, 'acc5_pc': acc5_pc, 'acc_pc': acc_pc,
+#         'microF1_cc':microF1_cc, 'macroF1_cc':macroF1_cc,
+#         'microAUC_cc':microAUC_cc, 'macroAUC_cc':macroAUC_cc,
+#         'labels_cc': appeared_cc, 'count_cc': cases_cc,
+#         'acc10_cc': acc10_cc, 'acc5_cc': acc5_cc, 'acc_cc': acc_cc
+#     }
 
-    metric_dict['y_label'] = y
-    metric_dict['y_raw'] = y_pred
+#     metric_dict['y_label'] = y
+#     metric_dict['y_raw'] = y_pred
 
-    return metric_dict
+#     return metric_dict
 
 
 # to print out results
